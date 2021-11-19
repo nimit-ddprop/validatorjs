@@ -1,4 +1,4 @@
-/*! validatorjs - 2020-12-03 */
+/*! validatorjs - 2021-11-19 */
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.Validator = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 function AsyncResolvers(onFailedOne, onResolvedAll) {
   this.onResolvedAll = onResolvedAll;
@@ -371,6 +371,8 @@ var require_method = require;
 
 var container = {
 
+  attributes: {},
+
   messages: {},
 
   /**
@@ -399,6 +401,23 @@ var container = {
     }
 
     this.messages[lang][attribute] = message;
+  },
+
+  /**
+   * Set a custom replacement to message
+   * 
+   * @param {string} name 
+   * @param {function} fn 
+   */
+  _setCustomReplement: function(name, fn) {
+    if (fn !== undefined) {
+      this.attributes[name] = function(template, rule) {
+        const replacement = fn(template, rule, this._getAttributeName);
+        return 'object' === typeof replacement
+          ? this._replacePlaceholders(rule, template, replacement)
+          : replacement;
+      };
+    }
   },
 
   /**
@@ -435,7 +454,7 @@ var container = {
    */
   _make: function(lang) {
     this._load(lang);
-    return new Messages(lang, this.messages[lang]);
+    return new Messages(lang, this.messages[lang], this.attributes);
   }
 
 };
@@ -498,11 +517,12 @@ module.exports = {
 },{}],6:[function(require,module,exports){
 var Attributes = require('./attributes');
 
-var Messages = function(lang, messages) {
+var Messages = function(lang, messages, customReplacements) {
   this.lang = lang;
   this.messages = messages;
   this.customMessages = {};
   this.attributeNames = {};
+  Attributes.replacements = { ...Attributes.replacements, ...customReplacements };
 };
 
 Messages.prototype = {
@@ -2114,12 +2134,14 @@ Validator.stopOnError = function (attributes) {
  * @param  {string}   name
  * @param  {function} fn
  * @param  {string}   message
+ * @param  {function} fnReplacement
  * @return {void}
  */
 Validator.register = function (name, fn, message, fnReplacement) {
   var lang = Validator.getDefaultLang();
   Rules.register(name, fn);
   Lang._setRuleMessage(lang, name, message);
+  Lang._setCustomReplement(name, fnReplacement);
 };
 
 /**
@@ -2135,6 +2157,7 @@ Validator.registerImplicit = function (name, fn, message, fnReplacement) {
   var lang = Validator.getDefaultLang();
   Rules.registerImplicit(name, fn);
   Lang._setRuleMessage(lang, name, message);
+  Lang._setCustomReplement(name, fnReplacement);
 };
 
 /**
@@ -2149,6 +2172,7 @@ Validator.registerAsync = function (name, fn, message, fnReplacement) {
   var lang = Validator.getDefaultLang();
   Rules.registerAsync(name, fn);
   Lang._setRuleMessage(lang, name, message);
+  Lang._setCustomReplement(name, fnReplacement);
 };
 
 /**
