@@ -2201,6 +2201,17 @@ Validator.registerMissedRuleValidator = function(fn, message) {
   Rules.registerMissedRuleValidator(fn, message);
 };
 
+/**
+ * Set a custom replacement to message
+ *
+ * @param {string} name
+ * @param {function} fn
+ * @return {void}
+ */
+Validator.setCustomReplacement = function(name, fnReplacement) {
+  Lang._setCustomReplement(name, fnReplacement);
+};
+
 module.exports = Validator;
 
 },{"./async":1,"./attributes":2,"./errors":3,"./lang":4,"./rules":7}]},{},[8])(8)
